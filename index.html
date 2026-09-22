@@ -72,7 +72,249 @@
         </div>
     </div>
     <script>
-        // 游戏逻辑（后续任务填充）
+        'use strict';
+
+        // ===== 常量 =====
+        const COLS = 10;
+        const ROWS = 20;
+        const EMPTY = null;
+
+        const GameState = {
+            READY: 'ready',
+            PLAYING: 'playing',
+            PAUSED: 'paused',
+            GAME_OVER: 'gameOver'
+        };
+
+        // ===== 方块定义 =====
+        const PIECES = {
+            I: { color: '#00f0f0', matrix: [[1,1,1,1]] },
+            O: { color: '#f0f000', matrix: [[1,1],[1,1]] },
+            T: { color: '#a000f0', matrix: [[0,1,0],[1,1,1]] },
+            S: { color: '#00f000', matrix: [[0,1,1],[1,1,0]] },
+            Z: { color: '#f00000', matrix: [[1,1,0],[0,1,1]] },
+            J: { color: '#0000f0', matrix: [[1,0,0],[1,1,1]] },
+            L: { color: '#f0a000', matrix: [[0,0,1],[1,1,1]] }
+        };
+
+        function createPiece(type) {
+            const piece = PIECES[type];
+            return {
+                type,
+                color: piece.color,
+                matrix: piece.matrix.map(row => row.slice()),
+                x: Math.floor(COLS / 2) - Math.floor(piece.matrix[0].length / 2),
+                y: 0
+            };
+        }
+
+        function rotateMatrix(matrix) {
+            const N = matrix.length;
+            const M = matrix[0].length;
+            const rotated = Array.from({ length: M }, () => Array(N).fill(0));
+            for (let y = 0; y < N; y++) {
+                for (let x = 0; x < M; x++) {
+                    rotated[x][N - 1 - y] = matrix[y][x];
+                }
+            }
+            return rotated;
+        }
+
+        function rotatePiece(piece, direction) {
+            const rotated = rotateMatrix(piece.matrix);
+            return {
+                ...piece,
+                matrix: direction === 'clockwise' ? rotated : rotateMatrix(rotated)
+            };
+        }
+
+        // ===== 棋盘 =====
+        function createBoard() {
+            return Array.from({ length: ROWS }, () => Array(COLS).fill(EMPTY));
+        }
+
+        function isCellFilled(board, row, col) {
+            return board[row] && board[row][col] !== EMPTY;
+        }
+
+        function isOutOfBounds(row, col) {
+            return row < 0 || row >= ROWS || col < 0 || col >= COLS;
+        }
+
+        function collides(piece, board) {
+            for (let y = 0; y < piece.matrix.length; y++) {
+                for (let x = 0; x < piece.matrix[y].length; x++) {
+                    if (piece.matrix[y][x]) {
+                        const boardX = piece.x + x;
+                        const boardY = piece.y + y;
+                        if (isOutOfBounds(boardY, boardX) || (boardY >= 0 && isCellFilled(board, boardY, boardX))) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function clearLines(board) {
+            let linesCleared = 0;
+            for (let y = ROWS - 1; y >= 0; y--) {
+                if (board[y].every(cell => cell !== EMPTY)) {
+                    board.splice(y, 1);
+                    board.unshift(Array(COLS).fill(EMPTY));
+                    linesCleared++;
+                    y++; // 重新检查当前行
+                }
+            }
+            return linesCleared;
+        }
+
+        // ===== 游戏状态机 =====
+        function createGame(hooks) {
+            const h = hooks || {};
+            return {
+                state: GameState.READY,
+                board: createBoard(),
+                piece: null,
+                nextPiece: null,
+                score: 0,
+                lines: 0,
+                level: 1,
+                dropInterval: 1000,
+                lastDrop: 0,
+                bag: [],
+
+                start() {
+                    this.state = GameState.PLAYING;
+                    this.board = createBoard();
+                    this.score = 0;
+                    this.lines = 0;
+                    this.level = 1;
+                    this.dropInterval = 1000;
+                    this.lastDrop = 0;
+                    this.bag = [];
+                    this.nextPiece = this.getNextPiece();
+                    this.spawnPiece();
+                    if (h.onStart) h.onStart();
+                },
+
+                spawnPiece() {
+                    this.piece = this.nextPiece;
+                    this.nextPiece = this.getNextPiece();
+                    if (collides(this.piece, this.board)) {
+                        this.state = GameState.GAME_OVER;
+                        if (h.onGameOver) h.onGameOver();
+                    }
+                },
+
+                getNextPiece() {
+                    if (this.bag.length === 0) {
+                        this.bag = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+                        // Fisher-Yates shuffle（7-bag 随机器）
+                        for (let i = this.bag.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [this.bag[i], this.bag[j]] = [this.bag[j], this.bag[i]];
+                        }
+                    }
+                    return createPiece(this.bag.pop());
+                },
+
+                move(dx, dy) {
+                    if (this.state !== GameState.PLAYING) return false;
+                    const moved = { ...this.piece, x: this.piece.x + dx, y: this.piece.y + dy };
+                    if (!collides(moved, this.board)) {
+                        this.piece = moved;
+                        if (h.onMove) h.onMove();
+                        return true;
+                    }
+                    return false;
+                },
+
+                rotate(direction) {
+                    if (this.state !== GameState.PLAYING) return false;
+                    const rotated = rotatePiece(this.piece, direction);
+                    // 简化踢墙：原位不行则左右各试一格
+                    const offsets = [0, -1, 1];
+                    for (const off of offsets) {
+                        const candidate = { ...rotated, x: rotated.x + off };
+                        if (!collides(candidate, this.board)) {
+                            this.piece = candidate;
+                            if (h.onRotate) h.onRotate();
+                            return true;
+                        }
+                    }
+                    return false;
+                },
+
+                hardDrop() {
+                    if (this.state !== GameState.PLAYING) return 0;
+                    let distance = 0;
+                    while (this.move(0, 1)) distance++;
+                    this.lockPiece();
+                    return distance;
+                },
+
+                lockPiece() {
+                    this.piece.matrix.forEach((row, y) => {
+                        row.forEach((value, x) => {
+                            if (value) {
+                                const by = this.piece.y + y;
+                                const bx = this.piece.x + x;
+                                if (by >= 0 && by < ROWS && bx >= 0 && bx < COLS) {
+                                    this.board[by][bx] = {
+                                        type: this.piece.type,
+                                        color: this.piece.color
+                                    };
+                                }
+                            }
+                        });
+                    });
+                    const linesCleared = clearLines(this.board);
+                    this.lines += linesCleared;
+                    this.score += this.calculateScore(linesCleared);
+                    this.updateDifficulty();
+                    if (linesCleared > 0 && h.onClear) h.onClear(linesCleared);
+                    this.spawnPiece();
+                },
+
+                calculateScore(linesCleared) {
+                    const points = [0, 100, 300, 500, 800];
+                    return points[linesCleared] * this.level;
+                },
+
+                updateDifficulty() {
+                    this.level = Math.floor(this.lines / 10) + 1;
+                    this.dropInterval = Math.max(100, 1000 - (this.level - 1) * 100);
+                },
+
+                tick(timestamp) {
+                    if (this.state !== GameState.PLAYING) return;
+                    if (!this.lastDrop) this.lastDrop = timestamp;
+                    const elapsed = timestamp - this.lastDrop;
+                    if (elapsed > this.dropInterval) {
+                        if (!this.move(0, 1)) {
+                            this.lockPiece();
+                        }
+                        this.lastDrop = timestamp;
+                    }
+                },
+
+                pause() {
+                    if (this.state === GameState.PLAYING) {
+                        this.state = GameState.PAUSED;
+                    } else if (this.state === GameState.PAUSED) {
+                        this.state = GameState.PLAYING;
+                        this.lastDrop = 0;
+                    }
+                },
+
+                reset() {
+                    this.start();
+                }
+            };
+        }
+
+        // 渲染与交互（后续任务填充）
     </script>
 </body>
 </html>
