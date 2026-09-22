@@ -420,7 +420,62 @@
             drawNextPiece(game);
         }
 
-        // 输入与交互（后续任务填充）
+        // ===== 游戏实例 =====
+        const game = createGame({
+            onMove: () => {},
+            onRotate: () => {},
+            onClear: () => {},
+            onGameOver: () => {}
+        });
+
+        // ===== 输入层 =====
+        function handleKeyDown(event) {
+            switch (event.key) {
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    game.move(-1, 0);
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    game.move(1, 0);
+                    break;
+                case 'ArrowDown':
+                    event.preventDefault();
+                    if (game.move(0, 1)) game.score += 1;
+                    break;
+                case 'ArrowUp':
+                case 'x':
+                case 'X':
+                    game.rotate('clockwise');
+                    break;
+                case 'z':
+                case 'Z':
+                    game.rotate('counterclockwise');
+                    break;
+                case ' ':
+                    event.preventDefault();
+                    game.hardDrop();
+                    break;
+                case 'p':
+                case 'P':
+                case 'Escape':
+                    game.pause();
+                    break;
+                case 'r':
+                case 'R':
+                    game.reset();
+                    break;
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        document.getElementById('start-btn').addEventListener('click', () => game.start());
+        document.getElementById('pause-btn').addEventListener('click', () => game.pause());
+        document.getElementById('reset-btn').addEventListener('click', () => game.reset());
+        document.getElementById('theme-btn').addEventListener('click', () => {});
+
+        // 游戏循环（后续任务填充）
     </script>
 </body>
 </html>
