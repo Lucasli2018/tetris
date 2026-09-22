@@ -556,9 +556,100 @@
         document.getElementById('start-btn').addEventListener('click', () => game.start());
         document.getElementById('pause-btn').addEventListener('click', () => game.pause());
         document.getElementById('reset-btn').addEventListener('click', () => game.reset());
-        document.getElementById('theme-btn').addEventListener('click', () => {});
+        // ===== 主题切换 =====
+        const THEMES = {
+            classic: {
+                background: '#1a1a2e',
+                grid: 'rgba(255,255,255,0.05)',
+                css: { '--bg': '#0f0f23', '--accent': '#00f0f0' },
+                blocks: {
+                    I: '#00f0f0', O: '#f0f000', T: '#a000f0', S: '#00f000',
+                    Z: '#f00000', J: '#0000f0', L: '#f0a000'
+                }
+            },
+            neon: {
+                background: '#0a0a1a',
+                grid: 'rgba(0,255,255,0.1)',
+                css: { '--bg': '#05050d', '--accent': '#00ffff' },
+                blocks: {
+                    I: '#00ffff', O: '#ffff00', T: '#ff00ff', S: '#00ff00',
+                    Z: '#ff2222', J: '#4466ff', L: '#ff8800'
+                }
+            }
+        };
+        const THEME_KEY = 'tetris-theme';
+        let currentTheme = 'classic';
 
-        // 游戏循环（后续任务填充）
+        function applyTheme(themeName) {
+            const theme = THEMES[themeName];
+            if (!theme) return;
+            currentTheme = themeName;
+            THEME.background = theme.background;
+            THEME.grid = theme.grid;
+            Object.entries(theme.css).forEach(([k, v]) => {
+                document.documentElement.style.setProperty(k, v);
+            });
+            // 更新已固定方块与活动方块的颜色
+            game.board.forEach(row => row.forEach(cell => {
+                if (cell) cell.color = theme.blocks[cell.type];
+            }));
+            if (game.piece) game.piece.color = theme.blocks[game.piece.type];
+            if (game.nextPiece) game.nextPiece.color = theme.blocks[game.nextPiece.type];
+            try { localStorage.setItem(THEME_KEY, themeName); } catch (e) {}
+        }
+
+        document.getElementById('theme-btn').addEventListener('click', () => {
+            applyTheme(currentTheme === 'classic' ? 'neon' : 'classic');
+        });
+
+        // ===== HUD 更新 =====
+        function updateHUD() {
+            document.getElementById('score').textContent = game.score;
+            document.getElementById('lines').textContent = game.lines;
+            document.getElementById('level').textContent = game.level;
+            document.getElementById('best').textContent = Math.max(getBestScore(), game.score);
+        }
+
+        // ===== 状态遮罩 =====
+        function drawStateOverlay() {
+            if (game.state === GameState.PLAYING) return;
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 26px sans-serif';
+            if (game.state === GameState.READY) {
+                ctx.fillText('俄罗斯方块', canvas.width / 2, canvas.height / 2 - 20);
+                ctx.font = '15px sans-serif';
+                ctx.fillText('点击「开始」或按任意方向键', canvas.width / 2, canvas.height / 2 + 15);
+            } else if (game.state === GameState.PAUSED) {
+                ctx.fillText('已暂停', canvas.width / 2, canvas.height / 2);
+                ctx.font = '15px sans-serif';
+                ctx.fillText('按 P 继续', canvas.width / 2, canvas.height / 2 + 28);
+            } else if (game.state === GameState.GAME_OVER) {
+                ctx.fillText('游戏结束', canvas.width / 2, canvas.height / 2 - 20);
+                ctx.font = '15px sans-serif';
+                ctx.fillText('得分 ' + game.score + ' · 按 R 重新开始', canvas.width / 2, canvas.height / 2 + 15);
+            }
+            ctx.textAlign = 'start';
+        }
+
+        // ===== 游戏循环 =====
+        function gameLoop(timestamp) {
+            game.tick(timestamp);
+            render(game);
+            drawStateOverlay();
+            updateHUD();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ===== 初始化 =====
+        try {
+            const savedTheme = localStorage.getItem(THEME_KEY);
+            if (savedTheme && THEMES[savedTheme]) currentTheme = savedTheme;
+        } catch (e) {}
+        applyTheme(currentTheme);
+        requestAnimationFrame(gameLoop);
     </script>
 </body>
 </html>
