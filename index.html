@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄罗斯方块</title>
+    <style>
+        :root {
+            --bg: #0f0f23;
+            --panel: #1a1a2e;
+            --text: #e0e0e0;
+            --accent: #00f0f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #app {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+        }
+        .panel {
+            background: var(--panel);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        #side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 180px;
+        }
+        .stat { font-size: 14px; }
+        .stat .value { font-size: 22px; font-weight: bold; color: var(--accent); }
+        canvas { display: block; border-radius: 4px; }
+        button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        button:hover { filter: brightness(1.15); }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="panel" id="board-panel">
+            <canvas id="tetris-canvas"></canvas>
+        </div>
+        <div class="panel" id="side-panel">
+            <div class="stat">分数<div class="value" id="score">0</div></div>
+            <div class="stat">最高分<div class="value" id="best">0</div></div>
+            <div class="stat">消行<div class="value" id="lines">0</div></div>
+            <div class="stat">等级<div class="value" id="level">1</div></div>
+            <div class="panel" id="next-panel">
+                <canvas id="next-canvas" width="120" height="120"></canvas>
+            </div>
+            <button id="start-btn">开始</button>
+            <button id="pause-btn">暂停</button>
+            <button id="reset-btn">重开</button>
+            <button id="theme-btn">主题</button>
+        </div>
+    </div>
+    <script>
+        // 游戏逻辑（后续任务填充）
+    </script>
+</body>
+</html>
