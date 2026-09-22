@@ -314,7 +314,113 @@
             };
         }
 
-        // 渲染与交互（后续任务填充）
+        // ===== 渲染层 =====
+        const canvas = document.getElementById('tetris-canvas');
+        const ctx = canvas.getContext('2d');
+        const nextCanvas = document.getElementById('next-canvas');
+        const nextCtx = nextCanvas.getContext('2d');
+        const BLOCK_SIZE = 30;
+        canvas.width = COLS * BLOCK_SIZE;
+        canvas.height = ROWS * BLOCK_SIZE;
+
+        const THEME = {
+            background: '#1a1a2e',
+            grid: 'rgba(255,255,255,0.05)'
+        };
+
+        function drawBlockAt(context, x, y, color, offsetX = 0, offsetY = 0, size = BLOCK_SIZE) {
+            context.fillStyle = color;
+            context.fillRect(offsetX + x * size + 1, offsetY + y * size + 1, size - 2, size - 2);
+            context.strokeStyle = 'rgba(255,255,255,0.3)';
+            context.strokeRect(offsetX + x * size + 1, offsetY + y * size + 1, size - 2, size - 2);
+        }
+
+        function drawBoard(board) {
+            ctx.fillStyle = THEME.background;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 网格
+            ctx.strokeStyle = THEME.grid;
+            for (let x = 0; x <= COLS; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * BLOCK_SIZE, 0);
+                ctx.lineTo(x * BLOCK_SIZE, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= ROWS; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * BLOCK_SIZE);
+                ctx.lineTo(canvas.width, y * BLOCK_SIZE);
+                ctx.stroke();
+            }
+
+            // 已固定方块
+            board.forEach((row, y) => {
+                row.forEach((cell, x) => {
+                    if (cell) drawBlockAt(ctx, x, y, cell.color);
+                });
+            });
+        }
+
+        function drawPiece(piece) {
+            if (!piece) return;
+            piece.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) drawBlockAt(ctx, piece.x + x, piece.y + y, piece.color);
+                });
+            });
+        }
+
+        function getGhostPosition(piece, board) {
+            let ghostY = piece.y;
+            while (!collides({ ...piece, y: ghostY + 1 }, board)) ghostY++;
+            return { x: piece.x, y: ghostY };
+        }
+
+        function drawGhost(game) {
+            if (!game.piece || game.state !== GameState.PLAYING) return;
+            const ghost = getGhostPosition(game.piece, game.board);
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+            ctx.setLineDash([4, 3]);
+            game.piece.matrix.forEach((row, y) => {
+                row.forEach((val, x) => {
+                    if (val) {
+                        ctx.strokeRect(
+                            (ghost.x + x) * BLOCK_SIZE + 2,
+                            (ghost.y + y) * BLOCK_SIZE + 2,
+                            BLOCK_SIZE - 4, BLOCK_SIZE - 4
+                        );
+                    }
+                });
+            });
+            ctx.setLineDash([]);
+        }
+
+        function drawNextPiece(game) {
+            nextCtx.fillStyle = THEME.background;
+            nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+            if (!game.nextPiece) return;
+            const size = 24;
+            const matrix = game.nextPiece.matrix;
+            const offsetX = (nextCanvas.width - matrix[0].length * size) / 2;
+            const offsetY = (nextCanvas.height - matrix.length * size) / 2;
+            matrix.forEach((row, y) => {
+                row.forEach((val, x) => {
+                    if (val) drawBlockAt(nextCtx, x, y, game.nextPiece.color, offsetX, offsetY, size);
+                });
+            });
+        }
+
+        function render(game) {
+            drawBoard(game.board);
+            if (game.piece && game.state !== GameState.READY) {
+                drawGhost(game);
+                drawPiece(game.piece);
+            }
+            drawNextPiece(game);
+        }
+
+        // 输入与交互（后续任务填充）
     </script>
 </body>
 </html>
