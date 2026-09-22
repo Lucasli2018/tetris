@@ -420,12 +420,72 @@
             drawNextPiece(game);
         }
 
-        // ===== 游戏实例 =====
+        // ===== 音效层 =====
+        let audioContext = null;
+        let soundEnabled = true;
+
+        function getAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            return audioContext;
+        }
+
+        function playTone(frequency, duration, type = 'sine', volume = 0.1) {
+            if (!soundEnabled) return;
+            try {
+                const ac = getAudioContext();
+                const oscillator = ac.createOscillator();
+                const gainNode = ac.createGain();
+
+                oscillator.type = type;
+                oscillator.frequency.setValueAtTime(frequency, ac.currentTime);
+                gainNode.gain.setValueAtTime(volume, ac.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(ac.destination);
+
+                oscillator.start();
+                oscillator.stop(ac.currentTime + duration);
+            } catch (e) { /* 音频不可用时静默 */ }
+        }
+
+        function playMoveSound() {
+            playTone(200, 0.05, 'square', 0.05);
+        }
+
+        function playRotateSound() {
+            playTone(300, 0.05, 'square', 0.05);
+        }
+
+        function playDropSound() {
+            playTone(150, 0.08, 'sawtooth', 0.08);
+        }
+
+        function playClearSound(linesCleared) {
+            const notes = [440, 554, 659, 880];
+            notes.slice(0, Math.max(1, linesCleared)).forEach((note, index) => {
+                setTimeout(() => playTone(note, 0.12, 'sine', 0.1), index * 80);
+            });
+        }
+
+        function playGameOverSound() {
+            const notes = [392, 330, 262, 196];
+            notes.forEach((note, index) => {
+                setTimeout(() => playTone(note, 0.2, 'sine', 0.1), index * 150);
+            });
+        }
+
+        // ===== 游戏实例（接入音效钩子）=====
         const game = createGame({
-            onMove: () => {},
-            onRotate: () => {},
-            onClear: () => {},
-            onGameOver: () => {}
+            onMove: playMoveSound,
+            onRotate: playRotateSound,
+            onClear: playClearSound,
+            onGameOver: playGameOverSound
         });
 
         // ===== 输入层 =====
@@ -454,7 +514,7 @@
                     break;
                 case ' ':
                     event.preventDefault();
-                    game.hardDrop();
+                    if (game.hardDrop() > 0) playDropSound();
                     break;
                 case 'p':
                 case 'P':
