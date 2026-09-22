@@ -480,12 +480,35 @@
             });
         }
 
+        // ===== 最高分记录 =====
+        const BEST_SCORE_KEY = 'tetris-best-score';
+
+        function getBestScore() {
+            try {
+                return parseInt(localStorage.getItem(BEST_SCORE_KEY) || '0', 10) || 0;
+            } catch (e) {
+                return 0;
+            }
+        }
+
+        function updateBestScore(score) {
+            const best = getBestScore();
+            if (score > best) {
+                try { localStorage.setItem(BEST_SCORE_KEY, score.toString()); } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
         // ===== 游戏实例（接入音效钩子）=====
         const game = createGame({
             onMove: playMoveSound,
             onRotate: playRotateSound,
             onClear: playClearSound,
-            onGameOver: playGameOverSound
+            onGameOver: () => {
+                playGameOverSound();
+                updateBestScore(game.score);
+            }
         });
 
         // ===== 输入层 =====
