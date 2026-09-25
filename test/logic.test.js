@@ -111,4 +111,26 @@ for (let r = 0; r < ROWS; r++) {
 g4.spawnPiece();
 assert.strictEqual(g4.state, GameState.GAME_OVER, '堆满后 spawn 应触发 gameOver');
 
+// --- HOLD 暂存 ---
+const g5 = createGame();
+g5.start();
+assert.strictEqual(g5.holdType, null, '初始暂存区为空');
+assert.strictEqual(g5.holdUsed, false, '初始未使用暂存');
+const firstType = g5.piece.type;
+assert.strictEqual(g5.hold(), true, '首次 hold 成功');
+assert.strictEqual(g5.holdType, firstType, '暂存区存入当前块类型');
+assert.strictEqual(g5.holdUsed, true, '当回合已用暂存');
+assert.strictEqual(g5.hold(), false, '同回合二次 hold 拒绝');
+// 锁定后重置
+g5.hardDrop();
+assert.strictEqual(g5.holdUsed, false, '锁定新块后 hold 重置可用');
+// 交换路径：再 hold 一次，应取回暂存区类型
+const prevHold = g5.holdType;
+assert.strictEqual(g5.hold(), true, '第二次 hold 成功');
+assert.strictEqual(g5.piece.type, prevHold, 'hold 交换后当前块为暂存块');
+assert.notStrictEqual(g5.holdType, prevHold, '暂存区换入之前的当前块');
+// ready 状态拒绝
+const g6 = createGame();
+assert.strictEqual(g6.hold(), false, 'ready 状态 hold 拒绝');
+
 console.log('All logic tests passed ✓');
