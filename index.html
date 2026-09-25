@@ -204,6 +204,19 @@
                 -webkit-user-select: none;
                 user-select: none;
             }
+            /* 文字类操作按钮：缩小字号，与图标区分 */
+            #touch-controls button[data-act="hold"],
+            #touch-controls button[data-act="pause"],
+            #touch-controls button[data-act="restart"],
+            #touch-controls button[data-act="theme"],
+            #touch-controls button[data-act="sound"] {
+                font-size: 14px;
+                letter-spacing: 1px;
+            }
+            #touch-controls button.off {
+                opacity: 0.45;
+                filter: grayscale(0.6);
+            }
         }
     </style>
 </head>
@@ -237,6 +250,11 @@
             <button data-act="right" aria-label="右移">▶</button>
             <button data-act="down" aria-label="加速">▼</button>
             <button data-act="drop" aria-label="直落">⤓</button>
+            <button data-act="hold" aria-label="暂存">暂存</button>
+            <button data-act="pause" aria-label="暂停/继续">暂停</button>
+            <button data-act="restart" aria-label="重开">重开</button>
+            <button data-act="theme" aria-label="主题">主题</button>
+            <button data-act="sound" aria-label="音效开关">音效</button>
         </div>
     </div>
     <script>
@@ -945,9 +963,10 @@
             try { localStorage.setItem(THEME_KEY, themeName); } catch (e) {}
         }
 
-        document.getElementById('theme-btn').addEventListener('click', () => {
+        function toggleTheme() {
             applyTheme(currentTheme === 'classic' ? 'neon' : 'classic');
-        });
+        }
+        document.getElementById('theme-btn').addEventListener('click', toggleTheme);
 
         // ===== HUD 更新 =====
         function padScore(n) {
@@ -1012,7 +1031,17 @@
             const REPEAT_ACTS = { left: () => game.move(-1, 0), right: () => game.move(1, 0), down: () => { if (game.move(0, 1)) game.score += 1; } };
             const SINGLE_ACTS = {
                 rotate: () => game.rotate('clockwise'),
-                drop: () => { if (game.hardDrop() > 0) playDropSound(); }
+                drop: () => { if (game.hardDrop() > 0) playDropSound(); },
+                hold: () => game.hold(),
+                pause: () => game.pause(),
+                restart: () => game.reset(),
+                theme: () => toggleTheme(),
+                sound: () => {
+                    soundEnabled = !soundEnabled;
+                    const soundBtn = document.querySelector('#touch-controls button[data-act="sound"]');
+                    soundBtn.textContent = soundEnabled ? '音效' : '静音';
+                    soundBtn.classList.toggle('off', !soundEnabled);
+                }
             };
             document.querySelectorAll('#touch-controls button').forEach(btn => {
                 const act = btn.dataset.act;
