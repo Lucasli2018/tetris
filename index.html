@@ -228,14 +228,15 @@
         }
         .dpad {
             display: grid;
-            grid-template-columns: repeat(3, 62px);
+            grid-template-columns: repeat(4, 62px);
             grid-template-rows: repeat(2, 62px);
             gap: 10px;
         }
-        .dpad-up { grid-column: 2; grid-row: 1; }
+        .dpad-rotate { grid-column: 2 / span 2; grid-row: 1; }
         .dpad-left { grid-column: 1; grid-row: 2; }
         .dpad-down { grid-column: 2; grid-row: 2; }
-        .dpad-right { grid-column: 3; grid-row: 2; }
+        .dpad-drop { grid-column: 3; grid-row: 2; }
+        .dpad-right { grid-column: 4; grid-row: 2; }
         .dpad button {
             width: 100%; height: 100%;
             border-radius: 50%;
@@ -367,33 +368,48 @@
         /* ===== 手机端适配 ===== */
         @media (max-width: 720px) {
             body { align-items: flex-start; justify-content: flex-start; }
-            #app { gap: 10px; padding: 10px; width: 100%; max-width: 480px; }
+            #app {
+                gap: 6px;
+                padding: 6px;
+                width: 100%;
+                max-width: 480px;
+                grid-template-areas:
+                    "score score"
+                    "board side"
+                    "ctrl  side";
+            }
+            #board-panel { padding: 4px; }
+            #controls { padding-top: 0; }
+            #side-panel { align-self: start; }
+            /* 棋盘尽可能大：宽度受限取宽度推导，否则吃满剩余高度（目标 ≥70% 视口） */
             #tetris-canvas {
-                height: min(calc((100vw - 100px) * 2), 44vh);
+                height: min(calc((100vw - 94px) * 2), calc(100vh - 220px));
                 width: auto;
-                max-width: calc(100vw - 108px);
+                max-width: calc(100vw - 94px);
             }
             @supports (height: 100dvh) {
-                #tetris-canvas { height: min(calc((100vw - 100px) * 2), 44dvh); }
+                #tetris-canvas { height: min(calc((100vw - 94px) * 2), calc(100dvh - 220px)); }
             }
-            #wordmark { font-size: 22px; letter-spacing: 4px; }
-            .gear, .topbar-spacer { width: 42px; height: 42px; }
-            #score-bar { gap: 6px; }
-            .stat { min-width: 0; flex: 1 1 22%; padding: 6px 8px; border-radius: 14px; }
-            .stat .value { font-size: 18px; }
-            #side-panel { width: auto; gap: 8px; }
-            #next-panel, #hold-panel { padding: 4px 6px; }
-            #next-canvas { width: 50px; height: 100px; }
-            #hold-canvas { width: 50px; height: 42px; }
+            #wordmark { font-size: 20px; letter-spacing: 3px; }
+            .gear, .topbar-spacer { width: 38px; height: 38px; }
+            #score-bar { gap: 5px; }
+            .stat { min-width: 0; flex: 1 1 22%; padding: 4px 6px; border-radius: 12px; }
+            .stat .label { font-size: 10px; letter-spacing: 1px; }
+            .stat .value { font-size: 16px; }
+            #side-panel { width: auto; gap: 6px; }
+            #next-panel, #hold-panel { padding: 3px 5px; gap: 4px; }
+            #next-canvas { width: 36px; height: 76px; }
+            #hold-canvas { width: 36px; height: 32px; }
+            #next-panel .label, #hold-panel .label { font-size: 10px; letter-spacing: 1px; }
+            .dpad { grid-template-columns: repeat(4, 50px); grid-template-rows: repeat(2, 50px); gap: 8px; }
+            .dpad button { font-size: 20px; }
         }
-        @media (max-width: 720px) and (max-height: 680px) {
-            #app { gap: 6px; padding: 6px; }
-            #tetris-canvas { height: min(calc((100vw - 92px) * 2), 38vh); }
+        @media (max-width: 720px) and (max-height: 760px) {
+            #tetris-canvas { height: min(calc((100vw - 94px) * 2), calc(100vh - 235px)); }
             @supports (height: 100dvh) {
-                #tetris-canvas { height: min(calc((100vw - 92px) * 2), 38dvh); }
+                #tetris-canvas { height: min(calc((100vw - 94px) * 2), calc(100dvh - 235px)); }
             }
-            .stat .value { font-size: 15px; }
-            .dpad { grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 56px); }
+            .dpad { grid-template-columns: repeat(4, 46px); grid-template-rows: repeat(2, 46px); gap: 6px; }
         }
     </style>
 </head>
@@ -432,12 +448,13 @@
                     <canvas id="hold-canvas" width="140" height="120"></canvas>
                 </div>
             </div>
-            <!-- 方向键 D-pad（2 行：上行旋转，下行 左/下/右） -->
+            <!-- 方向键 D-pad（2 行：上行旋转，下行 左/软降/直落/右） -->
             <div id="controls">
                 <div class="dpad">
-                    <button class="dpad-up" data-act="rotate" aria-label="旋转">↑</button>
+                    <button class="dpad-rotate" data-act="rotate" aria-label="旋转">↑</button>
                     <button class="dpad-left" data-act="left" aria-label="左移">←</button>
-                    <button class="dpad-down" data-act="down" aria-label="软降">↓</button>
+                    <button class="dpad-down" data-act="down" aria-label="加速下落">↓</button>
+                    <button class="dpad-drop" data-act="drop" aria-label="一键下落">⇓</button>
                     <button class="dpad-right" data-act="right" aria-label="右移">→</button>
                 </div>
             </div>
@@ -1308,35 +1325,26 @@
             });
         });
 
-        // ===== 方向键 D-pad（2 行：↑旋转，←↓→） =====
+        // ===== 方向键 D-pad（2 行：↑旋转，← ↓软降 ⇓直落 →） =====
         function bindDpad() {
             const acts = {
                 left: () => game.move(-1, 0),
                 right: () => game.move(1, 0),
                 down: () => { if (game.move(0, 1)) game.score += 1; },
-                rotate: () => game.rotate('clockwise')
+                rotate: () => game.rotate('clockwise'),
+                drop: () => { if (game.hardDrop() > 0) playDropSound(); }
             };
             document.querySelectorAll('#controls .dpad button').forEach(btn => {
                 const act = btn.dataset.act;
-                let repeat = null, lpTimer = null;
+                let repeat = null;
                 btn.addEventListener('pointerdown', (e) => {
                     e.preventDefault();
-                    if (act === 'rotate') { acts.rotate(); return; }
-                    if (act === 'down') {
-                        acts.down();
-                        repeat = setInterval(acts.down, 130);
-                        lpTimer = setTimeout(() => {
-                            clearInterval(repeat); repeat = null;
-                            if (game.hardDrop() > 0) playDropSound();
-                        }, 380);
-                        return;
-                    }
+                    if (act === 'rotate' || act === 'drop') { acts[act](); return; }
                     acts[act]();
                     repeat = setInterval(acts[act], 130);
                 });
                 const stop = () => {
                     if (repeat) { clearInterval(repeat); repeat = null; }
-                    if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
                 };
                 ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
             });
