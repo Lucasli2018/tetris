@@ -78,7 +78,7 @@
         }
         #board-panel { padding: 10px; display: flex; align-items: center; justify-content: center; }
         #tetris-canvas {
-            height: min(500px, calc(100vh - 280px));
+            height: min(640px, calc(100vh - 200px));
             width: auto;
             border-radius: 12px;
         }
@@ -228,15 +228,36 @@
         }
         .dpad {
             display: grid;
-            grid-template-columns: repeat(4, 62px);
+            grid-template-columns: repeat(3, 62px);
             grid-template-rows: repeat(2, 62px);
             gap: 10px;
         }
-        .dpad-rotate { grid-column: 2 / span 2; grid-row: 1; }
+        .dpad-rotate { grid-column: 2; grid-row: 1; }
         .dpad-left { grid-column: 1; grid-row: 2; }
         .dpad-down { grid-column: 2; grid-row: 2; }
-        .dpad-drop { grid-column: 3; grid-row: 2; }
-        .dpad-right { grid-column: 4; grid-row: 2; }
+        .dpad-right { grid-column: 3; grid-row: 2; }
+        /* 独立「一键下落」按钮，醒目红色长条 */
+        #drop-btn {
+            margin-top: 12px;
+            width: 100%;
+            max-width: 210px;
+            height: 52px;
+            border-radius: 16px;
+            border: 3px solid #c4341f;
+            background: linear-gradient(180deg, #ff7a4a, #e23c1f);
+            color: #fff;
+            font-size: 19px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #c4341f;
+            display: flex; align-items: center; justify-content: center;
+            gap: 6px;
+            transition: transform 0.06s, box-shadow 0.06s;
+            touch-action: none;
+            user-select: none;
+        }
+        #drop-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #c4341f; }
         .dpad button {
             width: 100%; height: 100%;
             border-radius: 50%;
@@ -369,8 +390,8 @@
         @media (max-width: 720px) {
             body { align-items: flex-start; justify-content: flex-start; }
             #app {
-                gap: 6px;
-                padding: 6px;
+                gap: 5px;
+                padding: 5px;
                 width: 100%;
                 max-width: 480px;
                 grid-template-areas:
@@ -378,38 +399,40 @@
                     "board side"
                     "ctrl  side";
             }
-            #board-panel { padding: 4px; }
+            #board-panel { padding: 3px; }
             #controls { padding-top: 0; }
             #side-panel { align-self: start; }
-            /* 棋盘尽可能大：宽度受限取宽度推导，否则吃满剩余高度（目标 ≥70% 视口） */
+            /* 棋盘尽量占满：宽度推导与剩余高度取小，目标 ≥70% 视口 */
             #tetris-canvas {
-                height: min(calc((100vw - 94px) * 2), calc(100vh - 220px));
+                height: min(calc((100vw - 60px) * 2), calc(100vh - 238px));
                 width: auto;
-                max-width: calc(100vw - 94px);
+                max-width: calc(100vw - 60px);
             }
             @supports (height: 100dvh) {
-                #tetris-canvas { height: min(calc((100vw - 94px) * 2), calc(100dvh - 220px)); }
+                #tetris-canvas { height: min(calc((100vw - 60px) * 2), calc(100dvh - 238px)); }
             }
             #wordmark { font-size: 20px; letter-spacing: 3px; }
-            .gear, .topbar-spacer { width: 38px; height: 38px; }
-            #score-bar { gap: 5px; }
-            .stat { min-width: 0; flex: 1 1 22%; padding: 4px 6px; border-radius: 12px; }
+            .gear, .topbar-spacer { width: 36px; height: 36px; }
+            #score-bar { gap: 4px; }
+            .stat { min-width: 0; flex: 1 1 22%; padding: 3px 6px; border-radius: 12px; }
             .stat .label { font-size: 10px; letter-spacing: 1px; }
             .stat .value { font-size: 16px; }
-            #side-panel { width: auto; gap: 6px; }
-            #next-panel, #hold-panel { padding: 3px 5px; gap: 4px; }
-            #next-canvas { width: 36px; height: 76px; }
-            #hold-canvas { width: 36px; height: 32px; }
+            #side-panel { width: auto; gap: 5px; }
+            #next-panel, #hold-panel { padding: 2px 4px; gap: 3px; }
+            #next-canvas { width: 34px; height: 72px; }
+            #hold-canvas { width: 34px; height: 30px; }
             #next-panel .label, #hold-panel .label { font-size: 10px; letter-spacing: 1px; }
-            .dpad { grid-template-columns: repeat(4, 50px); grid-template-rows: repeat(2, 50px); gap: 8px; }
+            .dpad { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(2, 48px); gap: 7px; }
             .dpad button { font-size: 20px; }
+            #drop-btn { height: 42px; font-size: 16px; max-width: 170px; margin-top: 7px; }
         }
         @media (max-width: 720px) and (max-height: 760px) {
-            #tetris-canvas { height: min(calc((100vw - 94px) * 2), calc(100vh - 235px)); }
+            #tetris-canvas { height: min(calc((100vw - 56px) * 2), calc(100vh - 240px)); }
             @supports (height: 100dvh) {
-                #tetris-canvas { height: min(calc((100vw - 94px) * 2), calc(100dvh - 235px)); }
+                #tetris-canvas { height: min(calc((100vw - 56px) * 2), calc(100dvh - 256px)); }
             }
-            .dpad { grid-template-columns: repeat(4, 46px); grid-template-rows: repeat(2, 46px); gap: 6px; }
+            .dpad { grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(2, 44px); gap: 6px; }
+            #drop-btn { height: 38px; font-size: 15px; max-width: 158px; margin-top: 6px; }
         }
     </style>
 </head>
@@ -448,15 +471,15 @@
                     <canvas id="hold-canvas" width="140" height="120"></canvas>
                 </div>
             </div>
-            <!-- 方向键 D-pad（2 行：上行旋转，下行 左/软降/直落/右） -->
+            <!-- 方向键 D-pad（2 行：上行旋转，下行 左/软降/右） -->
             <div id="controls">
                 <div class="dpad">
                     <button class="dpad-rotate" data-act="rotate" aria-label="旋转">↑</button>
                     <button class="dpad-left" data-act="left" aria-label="左移">←</button>
                     <button class="dpad-down" data-act="down" aria-label="加速下落">↓</button>
-                    <button class="dpad-drop" data-act="drop" aria-label="一键下落">⇓</button>
                     <button class="dpad-right" data-act="right" aria-label="右移">→</button>
                 </div>
+                <button id="drop-btn" aria-label="一键下落">⇓ 一键下落</button>
             </div>
         </div>
     </div>
@@ -465,6 +488,9 @@
     <div id="settings-popup" class="hidden">
         <div class="settings-card">
             <div class="settings-title">设置</div>
+            <button class="btn" data-act="mode" id="mode-btn">模式 · 经典</button>
+            <button class="btn" data-act="ghost" id="ghost-btn">幽灵 ✓</button>
+            <button class="btn" data-act="bomb" id="bomb-btn">炸弹 ✗</button>
             <button class="btn" data-act="hold">暂存 (C)</button>
             <button class="btn" data-act="restart">重开 (R)</button>
             <button class="btn" data-act="theme">主题</button>
@@ -489,10 +515,11 @@
     <!-- 结算弹窗 -->
     <div id="gameover-modal" class="modal hidden">
         <div class="modal-card">
-            <h2>游戏结束</h2>
+            <h2 id="go-title">游戏结束</h2>
             <div class="row"><span>得分</span><b id="go-score">0</b></div>
             <div class="row"><span>消行</span><b id="go-lines">0</b></div>
             <div class="row"><span>等级</span><b id="go-level">1</b></div>
+            <div id="go-extra" class="hidden" style="color:var(--accent);font-size:13px;margin-top:4px;font-weight:800;"></div>
             <div id="go-newrecord" class="hidden" style="color:var(--accent);font-size:13px;margin-top:10px;font-weight:800;">🏆 新纪录！留下你的大名</div>
             <input id="go-name" maxlength="10" placeholder="输入名字" value="玩家">
             <div class="modal-actions">
@@ -522,6 +549,8 @@
             I: '#3fc7d4', O: '#ffce4a', T: '#b06fd6', S: '#6fc56f',
             Z: '#ff7a59', J: '#5b9bf6', L: '#ffab40'
         };
+        // 炸弹方块（1x1 特殊块，落地后炸掉周围 3x3）
+        const BOMB_COLOR = '#2a2a2a';
 
         const PIECES = {
             I: { color: PIECE_COLORS.I, matrix: [[1,1,1,1]] },
@@ -530,7 +559,8 @@
             S: { color: PIECE_COLORS.S, matrix: [[0,1,1],[1,1,0]] },
             Z: { color: PIECE_COLORS.Z, matrix: [[1,1,0],[0,1,1]] },
             J: { color: PIECE_COLORS.J, matrix: [[1,0,0],[1,1,1]] },
-            L: { color: PIECE_COLORS.L, matrix: [[0,0,1],[1,1,1]] }
+            L: { color: PIECE_COLORS.L, matrix: [[0,0,1],[1,1,1]] },
+            BOMB: { color: BOMB_COLOR, matrix: [[1]] }
         };
 
         function createPiece(type) {
@@ -609,9 +639,16 @@
         function createGame(hooks) {
             const h = hooks || {};
             return {
-                state: GameState.READY,
-                board: createBoard(),
-                piece: null,
+            state: GameState.READY,
+            mode: 'classic',
+            ghostEnabled: true,
+            bombEnabled: false,
+            timeLeft: 0,
+            elapsed: 0,
+            targetLines: 0,
+            won: false,
+            board: createBoard(),
+            piece: null,
                 nextPiece: null,
                 nextQueue: [],
                 score: 0,
@@ -624,7 +661,18 @@
                 holdUsed: false,
                 combo: 0,
 
-                start() {
+                start(opts) {
+                    const o = opts || {};
+                    if (o.mode) this.mode = o.mode;
+                    else if (!this.mode) this.mode = 'classic';
+                    if (typeof o.ghostEnabled === 'boolean') this.ghostEnabled = o.ghostEnabled;
+                    else if (typeof this.ghostEnabled !== 'boolean') this.ghostEnabled = true;
+                    if (typeof o.bombEnabled === 'boolean') this.bombEnabled = o.bombEnabled;
+                    else if (typeof this.bombEnabled !== 'boolean') this.bombEnabled = false;
+                    this.timeLeft = (this.mode === 'timeattack') ? 120 : 0;
+                    this.elapsed = 0;
+                    this.targetLines = (this.mode === 'sprint') ? 40 : 0;
+                    this.won = false;
                     this.state = GameState.PLAYING;
                     this.board = createBoard();
                     this.score = 0;
@@ -677,6 +725,9 @@
                 },
 
                 getNextPiece() {
+                    if (this.bombEnabled && Math.random() < 0.15) {
+                        return createPiece('BOMB');
+                    }
                     if (this.bag.length === 0) {
                         this.bag = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
                         for (let i = this.bag.length - 1; i > 0; i--) {
@@ -722,20 +773,26 @@
                 },
 
                 lockPiece() {
-                    this.piece.matrix.forEach((row, y) => {
-                        row.forEach((value, x) => {
-                            if (value) {
-                                const by = this.piece.y + y;
-                                const bx = this.piece.x + x;
-                                if (by >= 0 && by < ROWS && bx >= 0 && bx < COLS) {
-                                    this.board[by][bx] = {
-                                        type: this.piece.type,
-                                        color: this.piece.color
-                                    };
+                    if (this.piece.type === 'BOMB') {
+                        this.detonateBomb(this.piece.x, this.piece.y);
+                        this.score += 60;
+                        if (h.onBomb) h.onBomb(this.piece.x, this.piece.y);
+                    } else {
+                        this.piece.matrix.forEach((row, y) => {
+                            row.forEach((value, x) => {
+                                if (value) {
+                                    const by = this.piece.y + y;
+                                    const bx = this.piece.x + x;
+                                    if (by >= 0 && by < ROWS && bx >= 0 && bx < COLS) {
+                                        this.board[by][bx] = {
+                                            type: this.piece.type,
+                                            color: this.piece.color
+                                        };
+                                    }
                                 }
-                            }
+                            });
                         });
-                    });
+                    }
                     const rows = [];
                     this.board.forEach((row, y) => {
                         if (row.every(c => c !== EMPTY)) rows.push(y);
@@ -751,7 +808,28 @@
                     this.score += this.calculateScore(linesCleared);
                     this.updateDifficulty();
                     if (linesCleared > 0 && h.onClear) h.onClear(linesCleared, rows, this.combo);
+                    // 冲刺模式：达成目标行数即通关
+                    if (this.mode === 'sprint' && this.lines >= this.targetLines) {
+                        this.won = true;
+                        this.endGame();
+                        return;
+                    }
                     this.spawnPiece();
+                },
+
+                detonateBomb(cx, cy) {
+                    for (let y = cy - 1; y <= cy + 1; y++) {
+                        for (let x = cx - 1; x <= cx + 1; x++) {
+                            if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
+                                this.board[y][x] = EMPTY;
+                            }
+                        }
+                    }
+                },
+
+                endGame() {
+                    this.state = GameState.GAME_OVER;
+                    if (h.onGameOver) h.onGameOver();
                 },
 
                 calculateScore(linesCleared) {
@@ -766,8 +844,20 @@
                     if (this.level !== prevLevel && h.onLevelUp) h.onLevelUp(this.level);
                 },
 
-                tick(timestamp) {
+                tick(timestamp, dt = 0) {
                     if (this.state !== GameState.PLAYING) return;
+                    // 计时类模式
+                    if (this.mode === 'sprint') {
+                        this.elapsed += (dt || 0) * 1000;
+                    } else if (this.mode === 'timeattack') {
+                        this.timeLeft -= (dt || 0);
+                        if (this.timeLeft <= 0) {
+                            this.timeLeft = 0;
+                            this.won = false;
+                            this.endGame();
+                            return;
+                        }
+                    }
                     if (!this.lastDrop) this.lastDrop = timestamp;
                     const elapsed = timestamp - this.lastDrop;
                     if (elapsed > this.dropInterval) {
@@ -788,7 +878,11 @@
                 },
 
                 reset() {
-                    this.start();
+                    this.start({
+                        mode: this.mode,
+                        ghostEnabled: this.ghostEnabled,
+                        bombEnabled: this.bombEnabled
+                    });
                 }
             };
         }
@@ -823,6 +917,30 @@
         function drawBlockAt(context, x, y, color, offsetX = 0, offsetY = 0, size = BLOCK_SIZE) {
             const px = offsetX + x * size;
             const py = offsetY + y * size;
+            if (color === BOMB_COLOR) {
+                const cx = px + size / 2, cy = py + size / 2, rad = size * 0.36;
+                context.save();
+                context.fillStyle = '#2a2a2a';
+                context.beginPath();
+                context.arc(cx, cy, rad, 0, Math.PI * 2);
+                context.fill();
+                context.fillStyle = 'rgba(255,255,255,0.25)';
+                context.beginPath();
+                context.arc(cx - rad * 0.3, cy - rad * 0.3, rad * 0.35, 0, Math.PI * 2);
+                context.fill();
+                context.strokeStyle = '#ffcf3a';
+                context.lineWidth = Math.max(1, size * 0.06);
+                context.beginPath();
+                context.moveTo(cx, cy - rad);
+                context.quadraticCurveTo(cx + rad * 0.5, cy - rad * 1.3, cx + rad * 0.2, cy - rad * 1.6);
+                context.stroke();
+                context.fillStyle = '#ff7a2a';
+                context.beginPath();
+                context.arc(cx + rad * 0.2, cy - rad * 1.6, size * 0.07, 0, Math.PI * 2);
+                context.fill();
+                context.restore();
+                return;
+            }
             const pad = Math.max(1, size * 0.08);
             const bx = px + pad, by = py + pad, bw = size - pad * 2, bh = size - pad * 2;
             const r = bw * 0.22;
@@ -963,7 +1081,7 @@
         function render(game) {
             drawBoard(game.board);
             if (game.piece && game.state !== GameState.READY) {
-                drawGhost(game);
+                if (game.ghostEnabled) drawGhost(game);
                 drawPiece(game.piece);
             }
             drawNextPiece(game);
@@ -1082,6 +1200,23 @@
             document.getElementById('go-score').textContent = game.score;
             document.getElementById('go-lines').textContent = game.lines;
             document.getElementById('go-level').textContent = game.level;
+            const title = document.getElementById('go-title');
+            if (game.mode === 'sprint' && game.won) {
+                title.textContent = '🎉 通关！';
+            } else if (game.mode === 'timeattack') {
+                title.textContent = '⏱ 时间到';
+            } else if (game.won) {
+                title.textContent = '🎉 通关！';
+            } else {
+                title.textContent = '游戏结束';
+            }
+            const extra = document.getElementById('go-extra');
+            if (game.mode === 'sprint' || game.mode === 'timeattack') {
+                extra.textContent = '用时 ' + (game.elapsed / 1000).toFixed(1) + ' 秒';
+                extra.classList.remove('hidden');
+            } else {
+                extra.classList.add('hidden');
+            }
             const isNew = qualifiesScore(game.score);
             document.getElementById('go-newrecord').classList.toggle('hidden', !isNew);
             document.getElementById('go-name').style.display = isNew ? 'block' : 'none';
@@ -1173,6 +1308,12 @@
             ctx.textAlign = 'start';
         }
 
+        // ===== 玩法选项（模式/幽灵/炸弹），由设置菜单控制 =====
+        let currentMode = 'classic';
+        let ghostOn = true;
+        let bombOn = false;
+        const MODE_NAMES = { classic: '经典', sprint: '冲刺40', timeattack: '限时' };
+
         // ===== 游戏实例 =====
         const game = createGame({
             onMove: playMoveSound,
@@ -1188,6 +1329,11 @@
                 setTimeout(() => playTone(880, 0.14, 'sine', 0.08), 110);
                 fx.texts.push({ content: 'LEVEL ' + level, x: canvas.width / 2, y: canvas.height / 2, age: 0, duration: 1.2 });
                 fx.rowFlash = { rows: [], age: 0, duration: 0.2 };
+            },
+            onBomb: (x, y) => {
+                playTone(110, 0.22, 'sawtooth', 0.14);
+                setTimeout(() => playTone(80, 0.18, 'sawtooth', 0.1), 60);
+                fx.texts.push({ content: 'BOOM!', x: x * BLOCK_SIZE + BLOCK_SIZE / 2, y: y * BLOCK_SIZE + BLOCK_SIZE / 2, age: 0, duration: 0.9 });
             },
             onGameOver: () => {
                 playGameOverSound();
@@ -1235,7 +1381,9 @@
             if (game.state === GameState.READY) {
                 title.textContent = '俄罗斯方块';
                 btn.textContent = '▶ 开始';
-                hint.textContent = '点击画面或按钮开始';
+                if (currentMode === 'sprint') hint.textContent = '目标：消满 40 行 · 越快越好';
+                else if (currentMode === 'timeattack') hint.textContent = '限时 120 秒 · 比拼消行数';
+                else hint.textContent = '点击画面或按钮开始';
             } else if (game.state === GameState.PAUSED) {
                 title.textContent = '已暂停';
                 btn.textContent = '继续';
@@ -1243,7 +1391,10 @@
             }
         }
         function togglePlay() {
-            if (game.state === GameState.READY) { closeModals(); game.start(); }
+            if (game.state === GameState.READY) {
+                closeModals();
+                game.start({ mode: currentMode, ghostEnabled: ghostOn, bombEnabled: bombOn });
+            }
             else if (game.state === GameState.PLAYING) { game.pause(); }
             else if (game.state === GameState.PAUSED) { game.pause(); }
             else if (game.state === GameState.GAME_OVER) { closeModals(); game.reset(); }
@@ -1304,7 +1455,14 @@
         function updateHUD() {
             document.getElementById('score').textContent = padScore(game.score);
             document.getElementById('lines').textContent = game.lines;
-            document.getElementById('level').textContent = game.level;
+            const lvlEl = document.getElementById('level');
+            if (game.mode === 'sprint') {
+                lvlEl.textContent = Math.max(0, game.targetLines - game.lines) + '↓';
+            } else if (game.mode === 'timeattack') {
+                lvlEl.textContent = Math.ceil(game.timeLeft) + 's';
+            } else {
+                lvlEl.textContent = game.level;
+            }
             document.getElementById('best').textContent = padScore(Math.max(getBestScore(), game.score));
         }
 
@@ -1333,9 +1491,30 @@
                 else if (act === 'theme') toggleTheme();
                 else if (act === 'sound') toggleSound();
                 else if (act === 'leaderboard') { renderLeaderboard(); document.getElementById('leaderboard-modal').classList.remove('hidden'); closeSettings(); }
+                else if (act === 'mode') cycleMode();
+                else if (act === 'ghost') { ghostOn = !ghostOn; game.ghostEnabled = ghostOn; updateOptionBtns(); }
+                else if (act === 'bomb') { bombOn = !bombOn; game.bombEnabled = bombOn; updateOptionBtns(); }
                 else if (act === 'close') closeSettings();
             });
         });
+
+        const MODE_ORDER = ['classic', 'sprint', 'timeattack'];
+        function cycleMode() {
+            const idx = MODE_ORDER.indexOf(currentMode);
+            currentMode = MODE_ORDER[(idx + 1) % MODE_ORDER.length];
+            updateOptionBtns();
+            // 切换模式即以此模式重新开始一局
+            closeModals();
+            game.start({ mode: currentMode, ghostEnabled: ghostOn, bombEnabled: bombOn });
+        }
+        function updateOptionBtns() {
+            const mb = document.getElementById('mode-btn');
+            if (mb) mb.textContent = '模式 · ' + MODE_NAMES[currentMode];
+            const gb = document.getElementById('ghost-btn');
+            if (gb) { gb.textContent = ghostOn ? '幽灵 ✓' : '幽灵 ✗'; gb.classList.toggle('off', !ghostOn); }
+            const bb = document.getElementById('bomb-btn');
+            if (bb) { bb.textContent = bombOn ? '炸弹 ✓' : '炸弹 ✗'; bb.classList.toggle('off', !bombOn); }
+        }
 
         // ===== 方向键 D-pad（2 行：↑旋转，← ↓软降 ⇓直落 →） =====
         function bindDpad() {
@@ -1343,22 +1522,26 @@
                 left: () => game.move(-1, 0),
                 right: () => game.move(1, 0),
                 down: () => { if (game.move(0, 1)) game.score += 1; },
-                rotate: () => game.rotate('clockwise'),
-                drop: () => { if (game.hardDrop() > 0) playDropSound(); }
+                rotate: () => game.rotate('clockwise')
             };
             document.querySelectorAll('#controls .dpad button').forEach(btn => {
                 const act = btn.dataset.act;
                 let repeat = null;
                 btn.addEventListener('pointerdown', (e) => {
                     e.preventDefault();
-                    if (act === 'rotate' || act === 'drop') { acts[act](); return; }
                     acts[act]();
-                    repeat = setInterval(acts[act], 130);
+                    if (act !== 'rotate') repeat = setInterval(acts[act], 130);
                 });
                 const stop = () => {
                     if (repeat) { clearInterval(repeat); repeat = null; }
                 };
                 ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+            });
+            // 独立「一键下落」按钮
+            const dropBtn = document.getElementById('drop-btn');
+            dropBtn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                if (game.hardDrop() > 0) playDropSound();
             });
         }
         bindDpad();
@@ -1397,7 +1580,7 @@
         function gameLoop(timestamp) {
             const dt = lastFrameTime ? Math.min(0.1, (timestamp - lastFrameTime) / 1000) : 0;
             lastFrameTime = timestamp;
-            game.tick(timestamp);
+            game.tick(timestamp, dt);
             render(game);
             drawFx();
             updateOverlay();
@@ -1412,6 +1595,7 @@
             if (savedTheme && THEMES[savedTheme]) currentTheme = savedTheme;
         } catch (e) {}
         applyTheme(currentTheme);
+        updateOptionBtns();
         requestAnimationFrame(gameLoop);
     </script>
 </body>
