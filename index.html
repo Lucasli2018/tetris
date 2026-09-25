@@ -132,8 +132,8 @@
             body { align-items: flex-start; justify-content: flex-start; }
             #app {
                 flex-direction: column;
-                gap: 12px;
-                padding: 12px;
+                gap: 6px;
+                padding: 6px;
                 width: 100%;
                 max-width: 460px;
                 align-items: stretch;
@@ -147,14 +147,14 @@
                 justify-content: center;
             }
             #tetris-canvas {
-                height: min(calc((100vw - 56px) * 2), 62vh);
+                height: min(calc((100vw - 56px) * 2), 44vh);
                 width: auto;
                 max-width: 94vw;
             }
             /* 支持动态视口单位的浏览器用 dvh，进一步贴合真实可视高度 */
             @supports (height: 100dvh) {
                 #tetris-canvas {
-                    height: min(calc((100vw - 56px) * 2), 62dvh);
+                    height: min(calc((100vw - 56px) * 2), 44dvh);
                 }
             }
             #side-panel {
@@ -163,60 +163,73 @@
                 flex-direction: row;
                 flex-wrap: wrap;
                 justify-content: center;
-                align-items: center;
-                gap: 10px;
-                padding: 10px;
+                align-items: stretch;
+                gap: 4px;
+                padding: 6px;
             }
             .stat {
-                flex: 1 1 40%;
-                align-items: center;
-                font-size: 11px;
-                letter-spacing: 2px;
-            }
-            .stat .value { font-size: 20px; letter-spacing: 2px; }
-            #next-panel, #hold-panel {
-                flex: 0 0 auto;
-                padding: 6px 10px;
-            }
-            #next-canvas { width: 68px; height: 146px; }
-            #hold-canvas { width: 68px; height: 58px; }
-            #side-panel button {
                 flex: 1 1 22%;
-                padding: 9px 4px;
-                font-size: 13px;
-                letter-spacing: 2px;
+                min-width: 0;
+                align-items: center;
+                font-size: 10px;
+                letter-spacing: 1px;
             }
-            /* 触屏控制条 */
+            .stat .value { font-size: 17px; letter-spacing: 1px; }
+            #next-panel, #hold-panel {
+                flex: 1 1 40%;
+                padding: 4px 6px;
+            }
+            #next-canvas { width: 58px; height: 108px; }
+            #hold-canvas { width: 58px; height: 44px; }
+            /* 移动端操作统一在触屏控制条，隐藏侧栏重复按钮 */
+            #side-panel button { display: none; }
+            /* 触屏控制条：移动行 + 操作行（操作统一放此处，侧栏按钮隐藏避免重复） */
             #touch-controls {
-                display: grid;
+                display: flex;
+                flex-direction: column;
                 order: 2;
-                grid-template-columns: repeat(5, 1fr);
                 gap: 8px;
                 width: 100%;
                 max-width: 460px;
                 padding: 0 2px;
             }
+            .tc-move, .tc-actions { display: grid; gap: 8px; }
+            .tc-move { grid-template-columns: repeat(5, 1fr); }
+            .tc-actions { grid-template-columns: repeat(3, 1fr); }
             #touch-controls button {
-                padding: 15px 0;
-                font-size: 20px;
+                padding: 12px 0;
+                font-size: 19px;
                 letter-spacing: 0;
                 border-radius: 8px;
                 touch-action: manipulation;
                 -webkit-user-select: none;
                 user-select: none;
             }
-            /* 文字类操作按钮：缩小字号，与图标区分 */
-            #touch-controls button[data-act="hold"],
-            #touch-controls button[data-act="pause"],
-            #touch-controls button[data-act="restart"],
-            #touch-controls button[data-act="theme"],
-            #touch-controls button[data-act="sound"] {
-                font-size: 14px;
-                letter-spacing: 1px;
-            }
+            .tc-actions button { font-size: 14px; letter-spacing: 2px; padding: 10px 0; }
             #touch-controls button.off {
                 opacity: 0.45;
                 filter: grayscale(0.6);
+            }
+        }
+        /* 矮屏（老款短屏手机）进一步压缩，保证整页不滚 */
+        @media (max-width: 720px) and (max-height: 680px) {
+            #hold-panel { display: none; }
+            #app { gap: 4px; padding: 4px; }
+            #shell { gap: 4px; }
+            #topbar { padding: 0; }
+            #wordmark { font-size: 18px; letter-spacing: 4px; }
+            #tetris-canvas { height: min(calc((100vw - 56px) * 2), 34vh); }
+            #next-panel { padding: 3px 5px; }
+            #next-canvas { width: 48px; height: 84px; }
+            .stat { font-size: 9px; }
+            .stat .value { font-size: 14px; }
+            #touch-controls { gap: 5px; }
+            #touch-controls button { padding: 9px 0; }
+            .tc-actions button { padding: 7px 0; font-size: 13px; }
+        }
+        @supports (height: 100dvh) {
+            @media (max-width: 720px) and (max-height: 680px) {
+                #tetris-canvas { height: min(calc((100vw - 56px) * 2), 34dvh); }
             }
         }
 
@@ -333,8 +346,8 @@
         #lb-empty { color: #7e9cff; font-size: 13px; padding: 18px 0; }
         @media (max-width: 720px) {
             #topbar { max-width: 460px; }
-            #wordmark { font-size: 22px; letter-spacing: 5px; }
-            #shell { gap: 10px; }
+            #wordmark { font-size: 20px; letter-spacing: 5px; }
+            #shell { gap: 6px; }
         }
     </style>
 </head>
@@ -368,16 +381,21 @@
             <button id="theme-btn">主题</button>
         </div>
         <div id="touch-controls">
-            <button data-act="left" aria-label="左移">◀</button>
-            <button data-act="rotate" aria-label="旋转">⟳</button>
-            <button data-act="right" aria-label="右移">▶</button>
-            <button data-act="down" aria-label="加速">▼</button>
-            <button data-act="drop" aria-label="直落">⤓</button>
-            <button data-act="hold" aria-label="暂存">暂存</button>
-            <button data-act="pause" aria-label="暂停/继续">暂停</button>
-            <button data-act="restart" aria-label="重开">重开</button>
-            <button data-act="theme" aria-label="主题">主题</button>
-            <button data-act="sound" aria-label="音效开关">音效</button>
+            <div class="tc-move">
+                <button data-act="left" aria-label="左移">◀</button>
+                <button data-act="rotate" aria-label="旋转">⟳</button>
+                <button data-act="right" aria-label="右移">▶</button>
+                <button data-act="down" aria-label="加速">▼</button>
+                <button data-act="drop" aria-label="直落">⤓</button>
+            </div>
+            <div class="tc-actions">
+                <button data-act="start" aria-label="开始">开始</button>
+                <button data-act="pause" aria-label="暂停/继续">暂停</button>
+                <button data-act="restart" aria-label="重开">重开</button>
+                <button data-act="hold" aria-label="暂存">暂存</button>
+                <button data-act="theme" aria-label="主题">主题</button>
+                <button data-act="sound" aria-label="音效开关">音效</button>
+            </div>
         </div>
         </div>
     </div>
@@ -1304,6 +1322,7 @@
             const SINGLE_ACTS = {
                 rotate: () => game.rotate('clockwise'),
                 drop: () => { if (game.hardDrop() > 0) playDropSound(); },
+                start: () => { closeModals(); game.start(); },
                 hold: () => game.hold(),
                 pause: () => game.pause(),
                 restart: () => game.reset(),
