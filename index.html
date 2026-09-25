@@ -129,21 +129,33 @@
         }
         /* ===== 手机端适配 ===== */
         @media (max-width: 720px) {
-            body { align-items: flex-start; }
+            body { align-items: flex-start; justify-content: flex-start; }
             #app {
                 flex-direction: column;
-                gap: 10px;
-                padding: 10px;
+                gap: 12px;
+                padding: 12px;
                 width: 100%;
-                max-width: 480px;
-                align-items: center;
+                max-width: 460px;
+                align-items: stretch;
             }
-            /* 棋盘按视口等比缩放（canvas 内在 300x600） */
-            #board-panel { padding: 6px; }
+            /* 棋盘按可用宽度等比缩放（canvas 内在 300x600，比例 1:2）
+               高度以「可用宽度推导」为主，再用 dvh 兜底限制不超过可视区
+               —— 避免移动端 100vh 含地址栏导致棋盘过高、控制条被裁切错位 */
+            #board-panel {
+                width: 100%;
+                padding: 8px;
+                justify-content: center;
+            }
             #tetris-canvas {
-                height: min(58vh, calc((100vw - 44px) * 2), calc(100vh - 260px));
+                height: min(calc((100vw - 56px) * 2), 62vh);
                 width: auto;
-                min-height: 320px;
+                max-width: 94vw;
+            }
+            /* 支持动态视口单位的浏览器用 dvh，进一步贴合真实可视高度 */
+            @supports (height: 100dvh) {
+                #tetris-canvas {
+                    height: min(calc((100vw - 56px) * 2), 62dvh);
+                }
             }
             #side-panel {
                 order: 3;
@@ -152,7 +164,7 @@
                 flex-wrap: wrap;
                 justify-content: center;
                 align-items: center;
-                gap: 8px;
+                gap: 10px;
                 padding: 10px;
             }
             .stat {
@@ -168,8 +180,8 @@
             }
             #next-canvas, #hold-canvas { width: 72px; height: 62px; }
             #side-panel button {
-                flex: 1 1 30%;
-                padding: 8px 4px;
+                flex: 1 1 22%;
+                padding: 9px 4px;
                 font-size: 13px;
                 letter-spacing: 2px;
             }
@@ -180,11 +192,11 @@
                 grid-template-columns: repeat(5, 1fr);
                 gap: 8px;
                 width: 100%;
-                max-width: 480px;
-                padding: 0 4px;
+                max-width: 460px;
+                padding: 0 2px;
             }
             #touch-controls button {
-                padding: 14px 0;
+                padding: 15px 0;
                 font-size: 20px;
                 letter-spacing: 0;
                 border-radius: 8px;
