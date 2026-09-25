@@ -64,7 +64,12 @@
             border-radius: 6px;
             padding: 16px;
         }
-        #board-panel { padding: 10px; display: flex; }
+        /* 棋盘面板：canvas 居中且不被 flex 拉伸（避免非等比缩放导致网格与方块错位） */
+        #board-panel { padding: 10px; display: flex; align-items: center; justify-content: center; }
+        #tetris-canvas {
+            height: min(600px, calc(100vh - 64px));
+            width: auto;
+        }
         #side-panel {
             display: flex;
             flex-direction: column;
@@ -136,8 +141,9 @@
             /* 棋盘按视口等比缩放（canvas 内在 300x600） */
             #board-panel { padding: 6px; }
             #tetris-canvas {
-                height: min(58vh, calc((100vw - 44px) * 2));
+                height: min(58vh, calc((100vw - 44px) * 2), calc(100vh - 260px));
                 width: auto;
+                min-height: 320px;
             }
             #side-panel {
                 order: 3;
