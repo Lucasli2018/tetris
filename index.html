@@ -1221,6 +1221,17 @@
             const title = document.getElementById('overlay-title');
             const btn = document.getElementById('overlay-btn');
             const hint = document.getElementById('overlay-hint');
+            if (game.state === GameState.GAME_OVER) {
+                // 结算弹窗开着时由弹窗负责；弹窗关闭后这里提供“再来一局”
+                if (!document.getElementById('gameover-modal').classList.contains('hidden')) {
+                    ov.classList.add('hidden');
+                    return;
+                }
+                title.textContent = '游戏结束';
+                btn.textContent = '▶ 再来一局';
+                hint.textContent = '点击画面或按钮再来一局';
+                return;
+            }
             if (game.state === GameState.READY) {
                 title.textContent = '俄罗斯方块';
                 btn.textContent = '▶ 开始';
@@ -1235,7 +1246,7 @@
             if (game.state === GameState.READY) { closeModals(); game.start(); }
             else if (game.state === GameState.PLAYING) { game.pause(); }
             else if (game.state === GameState.PAUSED) { game.pause(); }
-            // GAME_OVER：交给结算弹窗处理
+            else if (game.state === GameState.GAME_OVER) { closeModals(); game.reset(); }
         }
         document.getElementById('board-panel').addEventListener('click', togglePlay);
 
@@ -1246,6 +1257,7 @@
             closeModals();
             renderLeaderboard();
             updateHUD();
+            game.reset();
         });
         document.getElementById('lb-close-btn').addEventListener('click', () => document.getElementById('leaderboard-modal').classList.add('hidden'));
 
