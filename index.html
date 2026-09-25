@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>俄罗斯方块</title>
     <style>
         :root {
@@ -118,6 +118,75 @@
             font-weight: bold;
             text-shadow: none;
         }
+        /* 触屏控制条（仅移动端显示） */
+        #touch-controls {
+            display: none;
+        }
+        /* ===== 手机端适配 ===== */
+        @media (max-width: 720px) {
+            body { align-items: flex-start; }
+            #app {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+                width: 100%;
+                max-width: 480px;
+                align-items: center;
+            }
+            /* 棋盘按视口等比缩放（canvas 内在 300x600） */
+            #board-panel { padding: 6px; }
+            #tetris-canvas {
+                height: min(58vh, calc((100vw - 44px) * 2));
+                width: auto;
+            }
+            #side-panel {
+                order: 3;
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+                gap: 8px;
+                padding: 10px;
+            }
+            .stat {
+                flex: 1 1 40%;
+                align-items: center;
+                font-size: 11px;
+                letter-spacing: 2px;
+            }
+            .stat .value { font-size: 20px; letter-spacing: 2px; }
+            #next-panel {
+                flex: 0 0 auto;
+                padding: 6px 10px;
+            }
+            #next-canvas { width: 72px; height: 62px; }
+            #side-panel button {
+                flex: 1 1 30%;
+                padding: 8px 4px;
+                font-size: 13px;
+                letter-spacing: 2px;
+            }
+            /* 触屏控制条 */
+            #touch-controls {
+                display: grid;
+                order: 2;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 8px;
+                width: 100%;
+                max-width: 480px;
+                padding: 0 4px;
+            }
+            #touch-controls button {
+                padding: 14px 0;
+                font-size: 20px;
+                letter-spacing: 0;
+                border-radius: 8px;
+                touch-action: manipulation;
+                -webkit-user-select: none;
+                user-select: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -138,6 +207,13 @@
             <button id="pause-btn">暂停</button>
             <button id="reset-btn">重开</button>
             <button id="theme-btn">主题</button>
+        </div>
+        <div id="touch-controls">
+            <button data-act="left" aria-label="左移">◀</button>
+            <button data-act="rotate" aria-label="旋转">⟳</button>
+            <button data-act="right" aria-label="右移">▶</button>
+            <button data-act="down" aria-label="加速">▼</button>
+            <button data-act="drop" aria-label="直落">⤓</button>
         </div>
     </div>
     <script>
@@ -739,6 +815,67 @@
             updateHUD();
             requestAnimationFrame(gameLoop);
         }
+
+        // ===== 触屏控制层（移动端） =====
+        // 控制按钮：单击执行；左右/下支持长按连发
+        function bindTouchControls() {
+            const REPEAT_ACTS = { left: () => game.move(-1, 0), right: () => game.move(1, 0), down: () => { if (game.move(0, 1)) game.score += 1; } };
+            const SINGLE_ACTS = {
+                rotate: () => game.rotate('clockwise'),
+                drop: () => { if (game.hardDrop() > 0) playDropSound(); }
+            };
+            document.querySelectorAll('#touch-controls button').forEach(btn => {
+                const act = btn.dataset.act;
+                let repeatTimer = null;
+                const stopRepeat = () => { if (repeatTimer) { clearInterval(repeatTimer); repeatTimer = null; } };
+                btn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    if (SINGLE_ACTS[act]) { SINGLE_ACTS[act](); return; }
+                    if (REPEAT_ACTS[act]) {
+                        REPEAT_ACTS[act]();
+                        repeatTimer = setInterval(REPEAT_ACTS[act], 130);
+                    }
+                });
+                ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev =>
+                    btn.addEventListener(ev, stopRepeat));
+            });
+        }
+        bindTouchControls();
+
+        // 棋盘手势：左右滑移动、下滑软降、点按旋转
+        function bindBoardGestures() {
+            const SWIPE_THRESHOLD = 28;
+            let lastX = 0, lastY = 0, startX = 0, startY = 0, startTime = 0, moved = false;
+            canvas.addEventListener('touchstart', (e) => {
+                const t = e.touches[0];
+                lastX = startX = t.clientX;
+                lastY = startY = t.clientY;
+                startTime = Date.now();
+                moved = false;
+                e.preventDefault();
+            }, { passive: false });
+            canvas.addEventListener('touchmove', (e) => {
+                const t = e.touches[0];
+                const dx = t.clientX - lastX;
+                const dy = t.clientY - lastY;
+                if (dx >= SWIPE_THRESHOLD) { game.move(1, 0); lastX = t.clientX; moved = true; }
+                else if (dx <= -SWIPE_THRESHOLD) { game.move(-1, 0); lastX = t.clientX; moved = true; }
+                if (dy >= SWIPE_THRESHOLD) { if (game.move(0, 1)) game.score += 1; lastY = t.clientY; moved = true; }
+                e.preventDefault();
+            }, { passive: false });
+            canvas.addEventListener('touchend', (e) => {
+                const totalDx = Math.abs(e.changedTouches[0].clientX - startX);
+                const totalDy = Math.abs(e.changedTouches[0].clientY - startY);
+                // 快速下滑（未大幅横移）触发硬降
+                if (totalDy > 70 && totalDx < 50 && Date.now() - startTime < 260) {
+                    if (game.hardDrop() > 0) playDropSound();
+                } else if (!moved && totalDx < 10 && totalDy < 10 && Date.now() - startTime < 300) {
+                    game.rotate('clockwise');
+                }
+                e.preventDefault();
+            }, { passive: false });
+        }
+        bindBoardGestures();
 
         // ===== 初始化 =====
         try {
