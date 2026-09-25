@@ -218,10 +218,132 @@
                 filter: grayscale(0.6);
             }
         }
+
+        /* ===== 开通版本外壳 / 标题栏 / 弹窗 ===== */
+        #shell {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        #topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 760px;
+            padding: 0 4px;
+        }
+        #wordmark {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-weight: 900;
+            font-size: 28px;
+            letter-spacing: 8px;
+            color: #fff;
+            text-shadow: 0 0 12px var(--accent), 0 0 26px rgba(0, 240, 240, 0.6);
+        }
+        #lb-open-btn {
+            background: linear-gradient(180deg, rgba(30, 55, 160, 0.9), rgba(18, 32, 105, 0.95));
+            color: var(--text);
+            border: 2px solid var(--panel-line);
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 13px;
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow: inset 0 0 0 2px var(--bg-2), 0 0 14px rgba(40, 80, 220, 0.3);
+        }
+        #lb-open-btn:hover { filter: brightness(1.3); }
+
+        /* 弹窗（结算 / 排行榜） */
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 6, 30, 0.78);
+            backdrop-filter: blur(2px);
+            padding: 16px;
+        }
+        .modal.hidden { display: none; }
+        .modal-card {
+            width: 100%;
+            max-width: 360px;
+            background: linear-gradient(180deg, rgba(20, 36, 100, 0.96), rgba(12, 22, 70, 0.98));
+            border: 2px solid var(--panel-line);
+            border-radius: 10px;
+            padding: 22px;
+            box-shadow: inset 0 0 0 3px var(--bg-2), inset 0 0 0 4px var(--panel-line-dim), 0 0 30px rgba(40, 80, 220, 0.4);
+            text-align: center;
+        }
+        .modal-card h2 {
+            font-size: 22px;
+            letter-spacing: 4px;
+            color: #fff;
+            text-shadow: 0 0 12px var(--accent);
+            margin-bottom: 14px;
+        }
+        .modal-card .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+            color: #cdd9ff;
+            border-bottom: 1px dashed rgba(126, 156, 255, 0.25);
+        }
+        .modal-card .row b {
+            color: #fff;
+            font-family: 'Consolas', monospace;
+            letter-spacing: 2px;
+        }
+        .modal-card input {
+            width: 100%;
+            margin: 12px 0;
+            padding: 10px;
+            text-align: center;
+            font-size: 16px;
+            letter-spacing: 2px;
+            background: rgba(8, 16, 60, 0.6);
+            border: 2px solid var(--panel-line);
+            border-radius: 6px;
+            color: #fff;
+            outline: none;
+        }
+        .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+        .modal-actions button { flex: 1; padding: 11px 0; font-size: 14px; letter-spacing: 2px; }
+        #lb-list { list-style: none; max-height: 320px; overflow-y: auto; margin: 6px 0 14px; text-align: left; }
+        #lb-list li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 6px;
+            font-size: 13px;
+            color: #cdd9ff;
+            border-bottom: 1px dashed rgba(126, 156, 255, 0.2);
+        }
+        #lb-list li .rank { width: 24px; text-align: center; font-weight: bold; color: var(--accent); font-family: 'Consolas', monospace; }
+        #lb-list li .nm { flex: 1; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #lb-list li .sc { font-family: 'Consolas', monospace; color: #fff; letter-spacing: 1px; }
+        #lb-list li .dt { font-size: 10px; color: #7e9cff; }
+        #lb-empty { color: #7e9cff; font-size: 13px; padding: 18px 0; }
+        @media (max-width: 720px) {
+            #topbar { max-width: 460px; }
+            #wordmark { font-size: 22px; letter-spacing: 5px; }
+            #shell { gap: 10px; }
+        }
     </style>
 </head>
 <body>
-    <div id="app">
+    <div id="shell">
+        <header id="topbar">
+            <div id="wordmark">TETRIS</div>
+            <button id="lb-open-btn">排行榜</button>
+        </header>
+        <div id="app">
         <div class="panel" id="board-panel">
             <canvas id="tetris-canvas"></canvas>
         </div>
@@ -256,7 +378,37 @@
             <button data-act="theme" aria-label="主题">主题</button>
             <button data-act="sound" aria-label="音效开关">音效</button>
         </div>
+        </div>
     </div>
+
+    <!-- 排行榜弹窗 -->
+    <div id="leaderboard-modal" class="modal hidden">
+        <div class="modal-card">
+            <h2>排行榜 · TOP 10</h2>
+            <ul id="lb-list"></ul>
+            <div id="lb-empty" class="hidden">还没有记录，快去刷新纪录吧！</div>
+            <div class="modal-actions">
+                <button id="lb-close-btn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 结算弹窗 -->
+    <div id="gameover-modal" class="modal hidden">
+        <div class="modal-card">
+            <h2>游戏结束</h2>
+            <div class="row"><span>得分</span><b id="go-score">0</b></div>
+            <div class="row"><span>消行</span><b id="go-lines">0</b></div>
+            <div class="row"><span>等级</span><b id="go-level">1</b></div>
+            <div id="go-newrecord" class="hidden" style="color:#ffd27a;font-size:13px;margin-top:10px;text-shadow:0 0 10px #ff8c3a;">🏆 新纪录！留下你的大名</div>
+            <input id="go-name" maxlength="10" placeholder="输入名字" value="玩家">
+            <div class="modal-actions">
+                <button id="go-save-btn">保存成绩</button>
+                <button id="go-restart-btn">再来一局</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         'use strict';
 
@@ -749,7 +901,8 @@
 
         function getBestScore() {
             try {
-                return parseInt(localStorage.getItem(BEST_SCORE_KEY) || '0', 10) || 0;
+                const legacy = parseInt(localStorage.getItem(BEST_SCORE_KEY) || '0', 10) || 0;
+                return Math.max(legacy, leaderboardTop());
             } catch (e) {
                 return 0;
             }
@@ -762,6 +915,66 @@
                 return true;
             }
             return false;
+        }
+
+        // ===== 排行榜（本地 Top 10） =====
+        const LB_KEY = 'tetris-leaderboard';
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        function loadLeaderboard() {
+            try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch (e) { return []; }
+        }
+        function saveLeaderboard(list) {
+            try { localStorage.setItem(LB_KEY, JSON.stringify(list)); } catch (e) {}
+        }
+        function leaderboardTop() {
+            const l = loadLeaderboard();
+            return l.length ? l[0].score : 0;
+        }
+        function qualifiesScore(score) {
+            if (score <= 0) return false;
+            const l = loadLeaderboard();
+            return l.length < 10 || score > l[l.length - 1].score;
+        }
+        function addLeaderboardEntry(name, score, lines, level) {
+            const l = loadLeaderboard();
+            l.push({ name: (name || '玩家').slice(0, 10), score, lines, level, date: new Date().toISOString().slice(0, 10) });
+            l.sort((a, b) => b.score - a.score);
+            const top = l.slice(0, 10);
+            saveLeaderboard(top);
+            return top;
+        }
+        function renderLeaderboard() {
+            const list = loadLeaderboard();
+            const ul = document.getElementById('lb-list');
+            const empty = document.getElementById('lb-empty');
+            ul.innerHTML = '';
+            if (!list.length) { empty.classList.remove('hidden'); return; }
+            empty.classList.add('hidden');
+            list.forEach((e, i) => {
+                const li = document.createElement('li');
+                li.innerHTML = '<span class="rank">' + (i + 1) + '</span>' +
+                    '<span class="nm">' + escapeHtml(e.name) + '</span>' +
+                    '<span class="sc">' + String(e.score).padStart(5, '0') + '</span>' +
+                    '<span class="dt">' + e.date + '</span>';
+                ul.appendChild(li);
+            });
+        }
+        function showGameOverModal() {
+            document.getElementById('go-score').textContent = game.score;
+            document.getElementById('go-lines').textContent = game.lines;
+            document.getElementById('go-level').textContent = game.level;
+            const isNew = qualifiesScore(game.score);
+            document.getElementById('go-newrecord').classList.toggle('hidden', !isNew);
+            document.getElementById('go-name').style.display = isNew ? 'block' : 'none';
+            document.getElementById('go-save-btn').style.display = isNew ? 'block' : 'none';
+            document.getElementById('gameover-modal').classList.remove('hidden');
+        }
+        function closeModals() {
+            document.getElementById('gameover-modal').classList.add('hidden');
+            document.getElementById('leaderboard-modal').classList.add('hidden');
         }
 
         // ===== 消行特效层（粒子火花 + 行闪光 + 连击浮字） =====
@@ -867,6 +1080,7 @@
             onGameOver: () => {
                 playGameOverSound();
                 updateBestScore(game.score);
+                showGameOverModal();
             }
         });
 
@@ -917,10 +1131,21 @@
 
         document.addEventListener('keydown', handleKeyDown);
 
-        document.getElementById('start-btn').addEventListener('click', () => game.start());
+        document.getElementById('start-btn').addEventListener('click', () => { closeModals(); game.start(); });
         document.getElementById('pause-btn').addEventListener('click', () => game.pause());
         document.getElementById('reset-btn').addEventListener('click', () => game.reset());
         document.getElementById('hold-btn').addEventListener('click', () => game.hold());
+        // 结算弹窗按钮
+        document.getElementById('go-restart-btn').addEventListener('click', () => { closeModals(); game.reset(); });
+        document.getElementById('go-save-btn').addEventListener('click', () => {
+            addLeaderboardEntry(document.getElementById('go-name').value.trim() || '玩家', game.score, game.lines, game.level);
+            closeModals();
+            renderLeaderboard();
+            updateHUD();
+        });
+        // 排行榜弹窗按钮
+        document.getElementById('lb-open-btn').addEventListener('click', () => { renderLeaderboard(); document.getElementById('leaderboard-modal').classList.remove('hidden'); });
+        document.getElementById('lb-close-btn').addEventListener('click', () => document.getElementById('leaderboard-modal').classList.add('hidden'));
         // ===== 主题切换 =====
         const THEMES = {
             classic: {
