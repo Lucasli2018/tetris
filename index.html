@@ -178,7 +178,8 @@
                 flex: 0 0 auto;
                 padding: 6px 10px;
             }
-            #next-canvas, #hold-canvas { width: 72px; height: 62px; }
+            #next-canvas { width: 68px; height: 146px; }
+            #hold-canvas { width: 68px; height: 58px; }
             #side-panel button {
                 flex: 1 1 22%;
                 padding: 9px 4px;
@@ -354,7 +355,7 @@
             <div class="stat">LEVEL<div class="value" id="level">1</div></div>
             <div class="panel" id="next-panel">
                 <span class="label">NEXT</span>
-                <canvas id="next-canvas" width="140" height="120"></canvas>
+                <canvas id="next-canvas" width="140" height="300"></canvas>
             </div>
             <div class="panel" id="hold-panel">
                 <span class="label">HOLD</span>
@@ -517,6 +518,7 @@
                 board: createBoard(),
                 piece: null,
                 nextPiece: null,
+                nextQueue: [],
                 score: 0,
                 lines: 0,
                 level: 1,
@@ -539,14 +541,21 @@
                     this.holdType = null;
                     this.holdUsed = false;
                     this.combo = 0;
-                    this.nextPiece = this.getNextPiece();
+                    this.nextQueue = [];
+                    this.ensureQueue();
+                    this.nextPiece = this.nextQueue[0];
                     this.spawnPiece();
                     if (h.onStart) h.onStart();
                 },
 
+                ensureQueue() {
+                    while (this.nextQueue.length < 4) this.nextQueue.push(this.getNextPiece());
+                },
+
                 spawnPiece() {
-                    this.piece = this.nextPiece;
-                    this.nextPiece = this.getNextPiece();
+                    this.piece = this.nextQueue.shift();
+                    this.ensureQueue();
+                    this.nextPiece = this.nextQueue[0];
                     this.holdUsed = false;
                     if (collides(this.piece, this.board)) {
                         this.state = GameState.GAME_OVER;
@@ -563,10 +572,11 @@
                         this.holdType = currentType;
                         this.piece = createPiece(swapType);
                     } else {
-                        // 首次暂存：从队列取下一块
+                        // 首次暂存：从预览队列取下一块
                         this.holdType = currentType;
-                        this.piece = this.nextPiece;
-                        this.nextPiece = this.getNextPiece();
+                        this.piece = this.nextQueue.shift();
+                        this.ensureQueue();
+                        this.nextPiece = this.nextQueue[0];
                     }
                     this.holdUsed = true;
                     if (h.onHold) h.onHold();
@@ -661,8 +671,10 @@
                 },
 
                 updateDifficulty() {
+                    const prevLevel = this.level;
                     this.level = Math.floor(this.lines / 10) + 1;
                     this.dropInterval = Math.max(100, 1000 - (this.level - 1) * 100);
+                    if (this.level !== prevLevel && h.onLevelUp) h.onLevelUp(this.level);
                 },
 
                 tick(timestamp) {
@@ -790,19 +802,35 @@
             ctx.setLineDash([]);
         }
 
+        // NEXT 预览队列：展示后续 3 块（首块高亮、尺寸略大）
         function drawNextPiece(game) {
             nextCtx.fillStyle = 'rgba(8, 16, 60, 0.35)';
             nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-            if (!game.nextPiece) return;
-            const size = 26;
-            const matrix = game.nextPiece.matrix;
-            const offsetX = (nextCanvas.width - matrix[0].length * size) / 2;
-            const offsetY = (nextCanvas.height - matrix.length * size) / 2;
-            matrix.forEach((row, y) => {
-                row.forEach((val, x) => {
-                    if (val) drawBlockAt(nextCtx, x, y, game.nextPiece.color, offsetX, offsetY, size);
+            const queue = game.nextQueue && game.nextQueue.length ? game.nextQueue : (game.nextPiece ? [game.nextPiece] : []);
+            if (!queue.length) return;
+            const slotH = nextCanvas.height / 3;
+            queue.slice(0, 3).forEach((p, i) => {
+                const size = i === 0 ? 26 : 21;
+                const matrix = p.matrix;
+                const offsetX = (nextCanvas.width - matrix[0].length * size) / 2;
+                const offsetY = i * slotH + (slotH - matrix.length * size) / 2;
+                if (i > 0) nextCtx.globalAlpha = 0.62; // 后续块降低存在感
+                matrix.forEach((row, y) => {
+                    row.forEach((val, x) => {
+                        if (val) drawBlockAt(nextCtx, x, y, p.color, offsetX, offsetY, size);
+                    });
                 });
+                nextCtx.globalAlpha = 1;
             });
+            // 分隔线
+            nextCtx.strokeStyle = 'rgba(126, 156, 255, 0.22)';
+            nextCtx.lineWidth = 1;
+            for (let i = 1; i < 3; i++) {
+                nextCtx.beginPath();
+                nextCtx.moveTo(10, i * slotH + 0.5);
+                nextCtx.lineTo(nextCanvas.width - 10, i * slotH + 0.5);
+                nextCtx.stroke();
+            }
         }
 
         function drawHoldPiece(game) {
@@ -1077,6 +1105,24 @@
                 // 交换/取出可能生成新方块，同步当前主题色
                 if (game.piece) game.piece.color = THEMES[currentTheme].blocks[game.piece.type];
             },
+            onStart: () => {
+                // 新一局开始：队列用当前主题色重建
+                const theme = THEMES[currentTheme];
+                if (game.nextQueue) game.nextQueue.forEach(p => { p.color = theme.blocks[p.type]; });
+                if (game.nextPiece) game.nextPiece.color = theme.blocks[game.nextPiece.type];
+            },
+            onLevelUp: (level) => {
+                playTone(660, 0.12, 'sine', 0.09);
+                setTimeout(() => playTone(880, 0.14, 'sine', 0.09), 110);
+                fx.texts.push({
+                    content: 'LEVEL ' + level,
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    age: 0,
+                    duration: 1.2
+                });
+                fx.rowFlash = { rows: [], age: 0, duration: 0.2 };
+            },
             onGameOver: () => {
                 playGameOverSound();
                 updateBestScore(game.score);
@@ -1185,6 +1231,7 @@
             }));
             if (game.piece) game.piece.color = theme.blocks[game.piece.type];
             if (game.nextPiece) game.nextPiece.color = theme.blocks[game.nextPiece.type];
+            if (game.nextQueue) game.nextQueue.forEach(p => { p.color = theme.blocks[p.type]; });
             try { localStorage.setItem(THEME_KEY, themeName); } catch (e) {}
         }
 

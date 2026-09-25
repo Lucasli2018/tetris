@@ -67,7 +67,8 @@ assert.strictEqual(game.state, GameState.READY, '初始为 ready');
 game.start();
 assert.strictEqual(game.state, GameState.PLAYING, 'start 后为 playing');
 assert.ok(game.piece && game.nextPiece, '生成当前块与下一块');
-assert.strictEqual(game.bag.length, 5, '7-bag：start 预取下一块 + 出生当前块后剩 5');
+assert.strictEqual(game.nextQueue.length, 4, 'NEXT 队列保持 4 个（当前预览 + 后续 3）');
+assert.strictEqual(game.nextPiece, game.nextQueue[0], 'nextPiece 恒为队列首元素');
 game.pause();
 assert.strictEqual(game.state, GameState.PAUSED, 'pause 后为 paused');
 game.pause();
@@ -159,5 +160,26 @@ g8.piece.x = 4;
 g8.piece.y = 0;
 g8.lockPiece();
 assert.strictEqual(g8.combo, 0, '未消行 combo 清零');
+
+// --- NEXT 队列推进 ---
+const g9 = createGame();
+g9.start();
+const q0 = g9.nextQueue.map(p => p.type).join('');
+const headType = g9.nextQueue[0].type;
+g9.hardDrop();
+assert.strictEqual(g9.piece.type, headType, 'hardDrop 后当前块来自队列首元素');
+assert.strictEqual(g9.nextQueue.length, 4, '推进后队列仍保持 4 个');
+
+// --- 升级钩子 ---
+const levelUps = [];
+const g10 = createGame({ onLevelUp: (lv) => levelUps.push(lv) });
+g10.start();
+g10.lines = 10;
+g10.updateDifficulty();
+g10.lines = 25;
+g10.updateDifficulty();
+assert.deepStrictEqual(levelUps, [2, 3], '跨级时触发 onLevelUp（2 级、3 级）');
+g10.updateDifficulty();
+assert.deepStrictEqual(levelUps, [2, 3], '等级未变不重复触发');
 
 console.log('All logic tests passed ✓');
