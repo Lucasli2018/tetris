@@ -343,6 +343,7 @@
                 bag: [],
                 holdType: null,
                 holdUsed: false,
+                combo: 0,
 
                 start() {
                     this.state = GameState.PLAYING;
@@ -355,6 +356,7 @@
                     this.bag = [];
                     this.holdType = null;
                     this.holdUsed = false;
+                    this.combo = 0;
                     this.nextPiece = this.getNextPiece();
                     this.spawnPiece();
                     if (h.onStart) h.onStart();
@@ -451,11 +453,23 @@
                             }
                         });
                     });
+                    // 先记录满行位置（供消行特效使用），再执行消除
+                    const rows = [];
+                    this.board.forEach((row, y) => {
+                        if (row.every(c => c !== EMPTY)) rows.push(y);
+                    });
                     const linesCleared = clearLines(this.board);
                     this.lines += linesCleared;
+                    // 连击：连续消行递增，中断清零；加成 = combo*50*等级
+                    if (linesCleared > 0) {
+                        this.combo++;
+                        this.score += (this.combo - 1) * 50 * this.level;
+                    } else {
+                        this.combo = 0;
+                    }
                     this.score += this.calculateScore(linesCleared);
                     this.updateDifficulty();
-                    if (linesCleared > 0 && h.onClear) h.onClear(linesCleared);
+                    if (linesCleared > 0 && h.onClear) h.onClear(linesCleared, rows, this.combo);
                     this.spawnPiece();
                 },
 
@@ -720,11 +734,101 @@
             return false;
         }
 
+        // ===== 消行特效层（粒子火花 + 行闪光 + 连击浮字） =====
+        const fx = { particles: [], texts: [], rowFlash: null };
+
+        function spawnClearFx(rows, linesCleared, combo) {
+            // 每个被消除的格子喷出火花粒子
+            rows.forEach(y => {
+                for (let x = 0; x < COLS; x++) {
+                    for (let i = 0; i < 3; i++) {
+                        fx.particles.push({
+                            x: (x + 0.5) * BLOCK_SIZE,
+                            y: (y + 0.5) * BLOCK_SIZE,
+                            vx: (Math.random() - 0.5) * 160,
+                            vy: (Math.random() - 0.9) * 140,
+                            life: 0.5 + Math.random() * 0.35,
+                            age: 0,
+                            size: 1.5 + Math.random() * 2.5,
+                            color: Math.random() < 0.6 ? '#ffd27a' : '#ff6b4a'
+                        });
+                    }
+                }
+            });
+            fx.rowFlash = { rows: rows.slice(), age: 0, duration: 0.28 };
+            if (combo > 1) {
+                const bonus = (combo - 1) * 50 * game.level;
+                fx.texts.push({
+                    content: combo + ' COMBO  +' + bonus,
+                    x: canvas.width / 2,
+                    y: rows.length ? (rows[0] + 0.5) * BLOCK_SIZE : canvas.height / 2,
+                    age: 0,
+                    duration: 1.1
+                });
+            }
+        }
+
+        function updateFx(dt) {
+            fx.particles.forEach(p => {
+                p.age += dt;
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.vy += 320 * dt; // 重力
+            });
+            fx.particles = fx.particles.filter(p => p.age < p.life);
+            if (fx.rowFlash) {
+                fx.rowFlash.age += dt;
+                if (fx.rowFlash.age > fx.rowFlash.duration) fx.rowFlash = null;
+            }
+            fx.texts.forEach(t => { t.age += dt; t.y -= 26 * dt; });
+            fx.texts = fx.texts.filter(t => t.age < t.duration);
+        }
+
+        function drawFx() {
+            // 行闪光：白色高亮渐隐
+            if (fx.rowFlash) {
+                const alpha = 0.85 * (1 - fx.rowFlash.age / fx.rowFlash.duration);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = '#ffffff';
+                fx.rowFlash.rows.forEach(y => {
+                    ctx.fillRect(0, y * BLOCK_SIZE, canvas.width, BLOCK_SIZE);
+                });
+                ctx.restore();
+            }
+            // 火花粒子（发光小方块，呼应原型图）
+            ctx.save();
+            fx.particles.forEach(p => {
+                ctx.globalAlpha = Math.max(0, 1 - p.age / p.life);
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 6;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+            });
+            ctx.restore();
+            // 连击浮字
+            ctx.save();
+            ctx.textAlign = 'center';
+            fx.texts.forEach(t => {
+                ctx.globalAlpha = Math.max(0, 1 - t.age / t.duration);
+                ctx.fillStyle = '#ffd27a';
+                ctx.shadowColor = '#ff8c3a';
+                ctx.shadowBlur = 12;
+                ctx.font = 'bold 18px monospace';
+                ctx.fillText(t.content, t.x, t.y);
+            });
+            ctx.restore();
+            ctx.textAlign = 'start';
+        }
+
         // ===== 游戏实例（接入音效钩子）=====
         const game = createGame({
             onMove: playMoveSound,
             onRotate: playRotateSound,
-            onClear: playClearSound,
+            onClear: (linesCleared, rows, combo) => {
+                playClearSound(linesCleared);
+                spawnClearFx(rows, linesCleared, combo);
+            },
             onHold: () => {
                 playTone(500, 0.06, 'triangle', 0.07);
                 // 交换/取出可能生成新方块，同步当前主题色
@@ -877,11 +981,16 @@
         }
 
         // ===== 游戏循环 =====
+        let lastFrameTime = 0;
         function gameLoop(timestamp) {
+            const dt = lastFrameTime ? Math.min(0.1, (timestamp - lastFrameTime) / 1000) : 0;
+            lastFrameTime = timestamp;
             game.tick(timestamp);
             render(game);
+            drawFx();
             drawStateOverlay();
             updateHUD();
+            updateFx(dt);
             requestAnimationFrame(gameLoop);
         }
 

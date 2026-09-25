@@ -133,4 +133,31 @@ assert.notStrictEqual(g5.holdType, prevHold, '暂存区换入之前的当前块'
 const g6 = createGame();
 assert.strictEqual(g6.hold(), false, 'ready 状态 hold 拒绝');
 
+// --- 连击计分 ---
+const g8 = createGame();
+g8.start();
+g8.score = 0;
+// 第一次消行：combo=1，无连击加成
+g8.piece = createPiece('O');
+g8.piece.x = 4;
+g8.piece.y = 18;
+for (let c = 0; c < COLS; c++) if (c !== 4 && c !== 5) g8.board[19][c] = { type: 'I', color: '#00f0f0' };
+g8.lockPiece();
+assert.strictEqual(g8.combo, 1, '首次消行 combo=1');
+assert.strictEqual(g8.score, 100, '首次消行只有基础分(100x1级)');
+// 第二次连续消行：combo=2，加成 50x等级
+g8.piece = createPiece('O');
+g8.piece.x = 4;
+g8.piece.y = 18;
+for (let c = 0; c < COLS; c++) if (c !== 4 && c !== 5) g8.board[19][c] = { type: 'I', color: '#00f0f0' };
+g8.lockPiece();
+assert.strictEqual(g8.combo, 2, '连续消行 combo=2');
+assert.strictEqual(g8.score, 100 + 100 + 50, '第二次消行 = 基础100 + 连击加成50');
+// 不消行则清零
+g8.piece = createPiece('O');
+g8.piece.x = 4;
+g8.piece.y = 0;
+g8.lockPiece();
+assert.strictEqual(g8.combo, 0, '未消行 combo 清零');
+
 console.log('All logic tests passed ✓');
